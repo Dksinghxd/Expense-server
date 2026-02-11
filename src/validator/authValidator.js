@@ -20,9 +20,21 @@ const resetPasswordValidator = [
         .isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digit")
         .isNumeric().withMessage("OTP must be numeric"),
 
-    body('password')
-        .notEmpty().withMessage("Password is required")
-        .isLength({ min: 3 }).withMessage("Password must be atleast 3 character"),
+    // Accept newPassword (frontend) or password (legacy)
+    body().custom((_, { req }) => {
+        const newPassword = req.body?.newPassword;
+        const password = req.body?.password;
+
+        if (!newPassword && !password) {
+            throw new Error('New password is required');
+        }
+
+        const value = newPassword || password;
+        if (typeof value !== 'string' || value.length < 3) {
+            throw new Error('Password must be atleast 3 character');
+        }
+        return true;
+    }),
 ];
 
 

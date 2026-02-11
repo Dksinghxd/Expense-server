@@ -1,54 +1,82 @@
-const Group = require('../model/group');
+const Group = require("../model/group");
 
 const groupDao = {
 
-    createdGroup: async (data) => {
-        const newGroup = new Group(data);
-        return await newGroup.save();
-    },
+ 
+  createGroup: async (data) => {
+    const newGroup = new Group(data);
+    return await newGroup.save();
+  },
 
-    updateGroup: async (data) => {
-        const { groupId, name, description, thumbnail, adminEmail, paymentStatus } = data;
-        return await Group.findByIdAndUpdate(
-            groupId,
-            { name, description, thumbnail, adminEmail, paymentStatus },
-            { new: true }
-        );
-    },
+  createdGroup: async (data) => {
+    return await groupDao.createGroup(data);
+  },
 
-    addMembers: async (groupId, ...membersEmail) => {
-        return await Group.findByIdAndUpdate(
-            groupId,
-            { $addToSet: { membersEmail: { $each: membersEmail } } },
-            { new: true }
-        );
-    },
+  
+  updateGroup: async (data) => {
+    const { groupId, name, description, thumbnail, adminEmail, paymentStatus } =
+      data;
 
-    removeMembers: async (groupId, ...membersEmail) => {
-        return await Group.findByIdAndUpdate(
-            groupId,
-            { $pull: { membersEmail: { $in: membersEmail } } },
-            { new: true }
-        );
-    },
+    return await Group.findByIdAndUpdate(
+      groupId,
+      { name, description, thumbnail, adminEmail, paymentStatus },
+      { new: true }
+    );
+  },
 
-    getGroupByEmail: async (email) => {
-        return await Group.find({ membersEmail: email });
-    },
+  
+  addMembers: async (groupId, ...membersEmail) => {
+    return await Group.findByIdAndUpdate(
+      groupId,
+      { $addToSet: { membersEmail: { $each: membersEmail } } },
+      { new: true }
+    );
+  },
 
-    getGroupByStatus: async (status) => {
-        return await Group.find({ "paymentStatus.isPaid": status });
-    },
+  removeMembers: async (groupId, ...membersEmail) => {
+    return await Group.findByIdAndUpdate(
+      groupId,
+      { $pull: { membersEmail: { $in: membersEmail } } },
+      { new: true }
+    );
+  },
 
-    /**
-     * Returns audit/settlement information
-     */
-    getAuditLog: async (groupId) => {
-        return await Group.findById(groupId).select({
-            paymentStatus: 1,
-            _id: 0
-        });
-    }
+  
+  getGroupByEmail: async (email) => {
+    return await Group.find({ membersEmail: email });
+  },
+
+  getGroupByStatus: async (status) => {
+    return await Group.find({ "paymentStatus.isPaid": status });
+  },
+
+  
+  getAuditLog: async (groupId) => {
+    return await Group.findById(groupId).select({
+      paymentStatus: 1,
+      _id: 0,
+    });
+  },
+
+  getPaymentStatusDate: async (groupId) => {
+    const group = await Group.findById(groupId).select(
+      "paymentStatus.date"
+    );
+    return group ? group.paymentStatus.date : null;
+  },
+
+  getGroupsPaginated: async (email, limit, skip) => {
+    const [groups, totalCount] = await Promise.all([
+      Group.find({ membersEmail: email })
+        .sort({ createdAt: -1 }) // stable pagination
+        .skip(skip)
+        .limit(limit),
+
+      Group.countDocuments({ membersEmail: email }),
+    ]);
+
+    return { groups, totalCount };
+  },
 };
 
 module.exports = groupDao;

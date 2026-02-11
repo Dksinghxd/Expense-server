@@ -18,14 +18,12 @@ const userDao = {
       return await newUser.save();
     } catch (error) {
       if (error.code === 11000) {
-        throw new Error({
-          code: 'USER_EXIST'
-        });
+        const err = new Error('User already exists');
+        err.code = 'USER_EXIST';
+        throw err;
       } else {
         console.log(error);
-        throw new Error({
-          message: `${error}`
-        });
+        throw new Error(error?.message || String(error));
       }
     }
   },
